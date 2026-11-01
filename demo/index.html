@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>Conduite à Brest : la démo</title>
+		<meta name="description" content="Conduite à Brest, la démo : rouler dans le centre de Brest (place de la Liberté, rue de Siam, pont de Recouvrance), bâti d'après les données publiques de l'IGN, d'OpenStreetMap et de Brest métropole.">
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: #e8e8e8;
+	background-color: #0b0e11;
+	overflow: hidden;
+	touch-action: none;
+	font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+/* accueil : avant tout téléchargement (le clic sur « Lancer » permet aussi au navigateur de jouer le son) */
+#accueil {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 16px;
+	box-sizing: border-box;
+	overflow-y: auto;
+	touch-action: pan-y;
+	background: radial-gradient(ellipse at top, #1b2633 0%, #0b0e11 70%);
+	z-index: 2;
+}
+
+#accueil .carte {
+	max-width: 620px;
+	line-height: 1.45;
+}
+
+#accueil h1 {
+	margin: 0;
+	font-size: 2.2rem;
+	font-weight: 700;
+}
+
+#accueil .sous-titre {
+	margin: 0.2rem 0 1.2rem;
+	color: #ffdb73;
+	font-size: 1.15rem;
+}
+
+#accueil p {
+	margin: 0 0 0.9rem;
+}
+
+#accueil .note {
+	padding: 0.7rem 0.9rem;
+	border-left: 3px solid #ffdb73;
+	background: rgba(255, 219, 115, 0.08);
+}
+
+#lancer {
+	margin: 0.4rem 0 0.5rem;
+	padding: 0.75rem 1.6rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: #ffdb73;
+	color: #14181d;
+	font: inherit;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+#lancer:hover {
+	background: #ffe596;
+}
+
+#accueil .petit, #accueil details {
+	color: #a8b0b8;
+	font-size: 0.85rem;
+}
+
+#accueil a {
+	color: #9cc7ff;
+}
+
+#accueil details pre {
+	white-space: pre-wrap;
+	font-size: 0.75rem;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: #0d1217;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+	z-index: 1;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-texte {
+	position: absolute;
+	bottom: calc(10% + 2rem);
+	left: 0;
+	right: 0;
+	text-align: center;
+	color: #e0e0e0;
+	font-size: 1rem;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+
+	</head>
+	<body>
+		<canvas id="canvas">
+			Votre navigateur n'affiche pas les canevas HTML.
+		</canvas>
+
+		<noscript>
+			Il faut activer JavaScript pour jouer.
+		</noscript>
+
+		<div id="accueil">
+			<div class="carte">
+				<h1>Conduite à Brest</h1>
+				<p class="sous-titre">La démo : le centre-ville</p>
+				<p>Rouler dans les vraies rues de Brest, de la place de la Liberté au pont de Recouvrance par la rue de
+				Siam, avec le tram, les bus, les piétons et la circulation. La ville est bâtie d'après les données
+				publiques de l'IGN, d'OpenStreetMap et de Brest métropole.</p>
+				<p>Toute la commune de Brest arrive bientôt dans l'app pour iPhone et iPad.</p>
+				<p class="note" id="mobile" hidden>Cette démo est faite pour un ordinateur (Chrome, Edge, Firefox ou
+				Safari). Sur un téléphone ou une tablette, le navigateur risque de manquer de mémoire et de recharger la
+				page.</p>
+				<button id="lancer" type="button">Lancer la démo</button>
+				<p class="petit" id="taille">Téléchargement : environ 200 Mo.</p>
+				<p class="petit">Clavier : flèches (ou Z Q S D) pour conduire, Espace pour le frein à main, C pour la
+				vue, 1 à 6 pour les points de départ, P pour une mission de stationnement, F1 pour l'aide. Manette :
+				gâchettes et stick.</p>
+				<p class="petit">Données : IGN, © les contributeurs d'OpenStreetMap, cadastre DGFiP, Brest métropole
+				(Licence Ouverte 2.0). <a href="https://boboul-cloud.github.io/conduiteabrest/">Le site du jeu</a></p>
+				<details>
+					<summary>Licences</summary>
+					<pre>Moteur : Godot Engine (godotengine.org), licence MIT.
+
+Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md).
+Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved.
+
+Symboles : police DejaVu Sans (dejavu-fonts.github.io), réduite, licence Bitstream Vera.</pre>
+				</details>
+			</div>
+		</div>
+
+		<div id="status">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<div id="status-texte">Chargement de la ville…</div>
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":179472700,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+// options du jeu dans l'adresse, pour les essais : index.html?a=--depart=3&a=--sans-vie
+(function () {
+	const a = new URLSearchParams(location.search).getAll('a');
+	if (a.length > 0) {
+		GODOT_CONFIG['args'] = ['--'].concat(a);
+	}
+}());
+const GODOT_THREADS_ENABLED = false;
+
+(function () {
+	const accueil = document.getElementById('accueil');
+	const statusOverlay = document.getElementById('status');
+	const statusTexte = document.getElementById('status-texte');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+	const wasm = GODOT_CONFIG['fileSizes'][GODOT_CONFIG['executable'] + '.wasm'] || 0;
+	const MO = 1000 * 1000;
+
+	// téléphone ou tablette (l'iPad se dit Mac, mais tactile)
+	if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+			|| (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+		document.getElementById('mobile').hidden = false;
+		document.getElementById('lancer').textContent = 'Essayer quand même';
+	}
+
+	// paquet du jeu coupé en parties (outils/web.sh) : leur liste, ou null pour un paquet d'un seul tenant
+	const parties = fetch('index.parties.json', { cache: 'no-cache' })
+		.then((r) => (r.ok ? r.json() : null), () => null);
+	parties.then((liste) => {
+		const total = wasm + (liste !== null ? liste.taille : (GODOT_CONFIG['fileSizes'][GODOT_CONFIG['mainPack']
+			|| GODOT_CONFIG['executable'] + '.pck'] || 0));
+		const taille = document.getElementById('taille');   // (absente une fois l'accueil retiré)
+		if (total > 0 && taille !== null) {
+			taille.textContent = `Téléchargement : environ ${Math.round(total / MO)} Mo.`;
+		}
+	});
+
+	function setStatusMode(mode) {
+		statusOverlay.style.visibility = mode === 'hidden' ? 'hidden' : 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusTexte.style.display = mode === 'notice' ? 'none' : 'block';
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+		}
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		const texte = err instanceof Error ? err.message : (typeof err === 'string' ? err : 'Erreur inconnue.');
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		texte.split('\n').forEach((ligne) => {
+			statusNotice.appendChild(document.createTextNode(ligne));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+		setStatusMode('notice');
+	}
+
+	// progression : moteur et paquet ensemble
+	const recu = { moteur: 0, paquet: 0 };
+	let attendu = wasm;
+	function progresser() {
+		if (attendu > 0) {
+			statusProgress.value = recu.moteur + recu.paquet;
+			statusProgress.max = attendu;
+			statusTexte.textContent = `Chargement de la ville… ${Math.round((recu.moteur + recu.paquet) / MO)} / `
+				+ `${Math.round(attendu / MO)} Mo`;
+		}
+	}
+
+	// les parties, l'une après l'autre, recollées dans un seul tableau
+	function chargerParties(liste) {
+		const paquet = new Uint8Array(liste.taille);
+		let position = 0;
+		return liste.parties.reduce((suite, nom) => suite.then(() => fetch(nom).then((r) => {
+			if (!r.ok) {
+				throw new Error(`Paquet du jeu introuvable (${nom} : ${r.status}).`);
+			}
+			const lecteur = r.body.getReader();
+			const lire = () => lecteur.read().then(({ done, value }) => {
+				if (done) {
+					return null;
+				}
+				paquet.set(value, position);
+				position += value.length;
+				recu.paquet = position;
+				progresser();
+				return lire();
+			});
+			return lire();
+		})), Promise.resolve()).then(() => {
+			if (position !== liste.taille) {
+				throw new Error(`Paquet du jeu incomplet (${position} octets sur ${liste.taille}).`);
+			}
+			return paquet;
+		});
+	}
+
+	function lancer() {
+		accueil.remove();
+		const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+		if (missing.length !== 0) {
+			displayFailureNotice('Ce navigateur ne peut pas lancer le jeu. Il lui manque :\n' + missing.join('\n'));
+			return;
+		}
+		setStatusMode('progress');
+		const engine = new Engine(GODOT_CONFIG);
+		const exe = GODOT_CONFIG['executable'];
+		parties.then((liste) => {
+			if (liste === null) {
+				return engine.startGame({
+					'onProgress': function (current, total) {
+						statusProgress.value = current;
+						statusProgress.max = total;
+					},
+				});
+			}
+			attendu = wasm + liste.taille;
+			engine.config.update({
+				'onProgress': function (current) {
+					recu.moteur = current;
+					progresser();
+				},
+			});
+			// (pas engine.preloadFile : il cherche la taille du fichier dans fileSizes[tableau], ce qui convertit les
+			// 150 Mo du tableau en texte ; copyToFS, avec le tampon et non une vue, n'en fait qu'une copie)
+			return Promise.all([engine.init(exe), chargerParties(liste)]).then(([, paquet]) => {
+				engine.copyToFS(exe + '.pck', paquet.buffer);
+				statusTexte.textContent = 'Préparation de la ville…';
+				statusProgress.removeAttribute('value');
+				return engine.start({ 'args': ['--main-pack', exe + '.pck'].concat(GODOT_CONFIG['args'] || []) });
+			});
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+
+	document.getElementById('lancer').addEventListener('click', lancer);
+	// essais (outils/essai_web/) : index.html?auto lance sans attendre le clic
+	if (new URLSearchParams(location.search).has('auto')) {
+		lancer();
+	}
+}());
+		</script>
+	</body>
+</html>
+

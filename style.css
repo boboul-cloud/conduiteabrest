@@ -28,6 +28,9 @@ a { color: var(--lien); }
 .encadre h3 { margin: 0 0 6px; }
 .encadre p { margin: 0; }
 .encadre p + p { margin-top: 8px; }
+.encadre + .encadre { margin-top: 14px; }
+.bouton { display: inline-block; margin-top: 4px; padding: 8px 18px; border-radius: 8px; background: var(--rouge);
+          color: #fff; font-weight: 600; text-decoration: none; }
 ul { padding-left: 22px; }
 li { margin: 4px 0; }
 table { width: 100%; border-collapse: collapse; margin: 12px 0; background: var(--carte); }
