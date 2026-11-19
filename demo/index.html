@@ -196,6 +196,11 @@ body {
 				Siam, avec le tram, les bus, les piétons et la circulation. La ville est bâtie d'après les données
 				publiques de l'IGN, d'OpenStreetMap et de Brest métropole.</p>
 				<p>Toute la commune de Brest arrive bientôt dans l'app pour iPhone et iPad.</p>
+				<p class="note">Cette démo est allégée pour rester fluide dans un navigateur. Par rapport à l'app :
+				le centre-ville seulement, pas toute la commune ; pas d'ombres portées ; ni phares, ni clignotants, ni
+				warning à commander (les phares s'allument seuls la nuit et sous la pluie) ; moins de voitures et de
+				piétons ; ni journée de travail, ni Grue flottante. Sur téléphone et tablette, en plus : 30 images par
+				seconde au plus, arbres, sols, bordures et murs de pierre simplifiés.</p>
 				<p class="note" id="mobile" hidden>Sur un téléphone ou une tablette, il faut un appareil récent : sur un
 				modèle ancien, le navigateur peut manquer de mémoire et recharger la page. Le jeu est plus à l'aise dans
 				l'app, ou sur un ordinateur.</p>
@@ -245,7 +250,7 @@ Autoradio : musiques de Joth, RandomMind et omfgdude (opengameart.org, CC0) ; Ra
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5267628,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5277048,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 // options du jeu dans l'adresse, pour les essais : index.html?a=--depart=3&a=--sans-vie
 (function () {
 	const a = new URLSearchParams(location.search).getAll('a');
@@ -613,6 +618,7 @@ const GODOT_THREADS_ENABLED = false;
 		setStatusMode('progress');
 		const engine = new Engine(GODOT_CONFIG);
 		const exe = GODOT_CONFIG['executable'];
+		let prete = Promise.resolve();
 		Promise.all([index, parties, cache]).then(([json, liste, c]) => {
 			console.log(`DEMO paquet=${paquetChoisi} t=${Math.round(performance.now())} ms`);
 			if (liste === null) {
@@ -658,6 +664,12 @@ const GODOT_THREADS_ENABLED = false;
 				if (tuiles.length > 0) {
 					utilisateur.unshift('--tuiles-web=/tuiles');
 				}
+				// le jeu prévient quand sa préparation est faite (scripts/prechauffage_web.gd : les vues, la nuit, la
+				// mission et le menu passent une fois à l'écran, sous ce voile) ; au plus 30 s
+				prete = new Promise((resolve) => {
+					window.conduitePrete = resolve;
+					setTimeout(resolve, 30000);
+				});
 				return engine.start({ 'args': ['--main-pack', exe + '.pck']
 					.concat(utilisateur.length > 0 ? ['--'].concat(utilisateur) : []) });
 			}).then(() => {
@@ -668,7 +680,7 @@ const GODOT_THREADS_ENABLED = false;
 						c, pointDepart(json), new Map(radio.filter((f) => f.demande).map((f) => ['radio_' + f.station, f])));
 				}
 			});
-		}).then(() => {
+		}).then(() => prete).then(() => {
 			console.log(`DEMO pret t=${Math.round(performance.now())} ms`);
 			setStatusMode('hidden');
 		}, displayFailureNotice);
